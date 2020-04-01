@@ -149,20 +149,20 @@ def test_basic():
         SCHEMA_1.validate(test)
 
 
-# def test_meta_schema_not_defined():
-#     """Test if type of schema is not defined"""
+def test_schema_error():
+    """Test if type of schema is not defined"""
 
-#     schema = schemadict({'a': {'type': bool}})
-#     schema.validate({'a': True})
+    schema = schemadict({'a': {'type': bool}})
+    schema.validate({'a': True})
 
-#     # Schema not defined for custiom 'type'
-#     class MyOwnType:
-#         pass
+    # Schema not defined for custiom 'type'
+    class MyOwnType:
+        pass
 
-#     schema = schemadict({'a': {'type': MyOwnType}})
+    schema = schemadict({'a': {'type': MyOwnType}})
 
-#     with pytest.raises(SchemaError):
-#         schema.validate({'a': MyOwnType()})
+    with pytest.raises(SchemaError):
+        schema.validate({'a': MyOwnType()})
 
 
 def test_primitive_bool():
@@ -185,12 +185,6 @@ def test_primitive_bool():
     # # TODO: Check if schema itself is correct
     # schema.update({'key_not_allowed_in_schema': 1})
 
-
-# def test_primitive_number():
-#     """Check type 'number'"""
-
-#     schema = schemadict({
-#     })
 
 def test_nested_dict():
     """Test nested schemadicts"""
@@ -235,6 +229,43 @@ def test_arrays():
         SCHEMA_3.validate(test)
 
 
+def test_list_with_subschemas():
+
+    schema_city = schemadict({
+        'name': {
+            'type': str
+        },
+        'population': {
+            'type': int,
+            '>=': 0
+        },
+    })
+
+    schema_country = schemadict({
+        'name': {'type': str},
+        'cities': {
+            'type': list,
+            'item_type': dict,
+            'item_schema': schema_city
+        },
+    })
+
+    test_country = {
+        'name': 'Neverland',
+        'cities': [
+            {'name': 'Faketown', 'population': 3},
+            {'name': 'Evergreen', 'population': True},  # bool not allowed here
+        ]
+    }
+
+    with pytest.raises(TypeError):
+        schema_country.validate(test_country)
+
+    # Fix the incorrect type
+    test_country['cities'][1]['population'] = 1
+    schema_country.validate(test_country)
+
+
 def test_default_value_dict():
     """Test 'get_default_value_dict()'"""
 
@@ -250,3 +281,7 @@ def test_default_value_dict():
 
     assert defaults == SCHEMA_4_DEFAULT_VALUE_DICT
 
+
+def test_version():
+    from schemadict.__version__ import __version__
+    print(__version__)

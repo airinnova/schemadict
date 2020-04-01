@@ -34,6 +34,7 @@ Examples
 .. code:: python
 
     >>> from schemadict import schemadict
+
     >>> schema = schemadict({
     ...     'name': {
     ...         'type': str,
@@ -50,22 +51,54 @@ Examples
     >>> testdict = {'name': 'Neil', 'age': 55}
     >>> schema.validate(testdict)
     >>>
+
     >>> testdict = {'name': 'Neil', 'age': -12}
     >>> schema.validate(testdict)
-    Traceback (most recent call last):
         ...
     ValueError: 'age' too small: expected >= 0, but was -12
     >>>
+
     >>> testdict = {'name': 'Neil', 'age': '55'}
     >>> schema.validate(testdict)
-    Traceback (most recent call last):
         ...
     TypeError: unexpected type for 'age': expected <class 'int'>, but was <class 'str'>
     >>>
 
 **Nested schemadict**
 
-**TODO**
+.. code:: python
+
+    >>> schema_city = schemadict({
+    ...     'name': {
+    ...         'type': str
+    ...     },
+    ...     'population': {
+    ...         'type': int,
+    ...         '>=': 0
+    ...     },
+    ... })
+    >>>
+    >>> schema_country = schemadict({
+    ...     'name': {'type': str},
+    ...     'cities': {
+    ...         'type': list,
+    ...         'item_type': dict,
+    ...         'item_schema': schema_city
+    ...     },
+    ... })
+    >>>
+    >>> test_country = {
+    ...     'name': 'Neverland',
+    ...     'cities': [
+    ...         {'name': 'Faketown', 'population': 3},
+    ...         {'name': 'Evergreen', 'population': True},
+    ...     ]
+    ... }
+    >>>
+    >>> schema_country.validate(test_country)
+        ...
+    TypeError: unexpected type for 'population': expected <class 'int'>, but was <class 'bool'>
+    >>>
 
 **Custom validation functions**
 
@@ -87,6 +120,7 @@ Features currently in progress
 
 * Metaschema validation
 * Validation of subschemas in list or tuples
+* Regex support for strings
 * Lazy validation and summary of all errors
 
 Installation

@@ -23,6 +23,7 @@
 Schema dictionaries
 """
 
+from collections import OrderedDict
 from inspect import isclass
 from numbers import Number
 
@@ -45,12 +46,14 @@ class Validators:
         :key: dictionary key (used in error message)
     """
 
-    @staticmethod
-    def is_type(value, exp_type, key):
-        if isinstance(exp_type, dict):
-            # ===== TODO =====
-            pass
-        elif not isinstance(value, exp_type):
+    @classmethod
+    def is_type(cls, value, exp_type, key):
+        # TODO????
+        # if isinstance(exp_type, dict):
+        #     cls.check_schemadict(value, exp_type, key)
+
+        # Note: isinstance(True, int) evaluates to True
+        if type(value) not in (exp_type,):
             raise TypeError(
                 f"unexpected type for {key!r}: " +
                 f"expected {exp_type!r}, but was {type(value)}"
@@ -72,8 +75,8 @@ class Validators:
                 f"expected < {comp_value!r}, but was {value!r}"
             )
 
-    @staticmethod
-    def is_ge(value, comp_value, key):
+    @classmethod
+    def is_ge(cls, value, comp_value, key):
         if not value >= comp_value:
             raise ValueError(
                 f"{key!r} too small: " +
@@ -112,8 +115,17 @@ class Validators:
                 f"expected {exp_item_type!r}"
             )
 
+    @classmethod
+    def check_item_schema(cls, iterable, item_schema, key):
+        for item in iterable:
+            cls.check_schemadict(item, item_schema, key)
 
-class ValidatorDict(dict):
+    @staticmethod
+    def check_schemadict(testdict, schema, key):
+        schemadict(schema).validate(testdict)
+
+
+class ValidatorDict(OrderedDict):
     """
     Use to map 'type' (=key) and validator functions
 
@@ -146,6 +158,12 @@ _VAL_COUNTABLE = {
 _VAL_ITERABLE = {
     **_VAL_COUNTABLE,
     'item_types': Validators.check_item_types,
+    'item_schema': Validators.check_item_schema,
+}
+
+_VAL_SUBSCHEMA = {
+    **_VAL_TYPE,
+    'schema': Validators.check_schemadict,
 }
 
 # Validators for primitive types
@@ -156,6 +174,8 @@ STANDARD_VALIDATORS = ValidatorDict({
     str: _VAL_COUNTABLE,
     list: _VAL_ITERABLE,
     tuple: _VAL_ITERABLE,
+    dict: _VAL_SUBSCHEMA,
+    # schemadict: _VAL_SUBSCHEMA,
 })
 
 
@@ -175,11 +195,11 @@ class schemadict(dict):
     # ===== TODO (START) =====
     # TODO: find better solution!?
     SPECIAL_KEY_CHECK_REQ_KEYS = '__REQUIRED_KEYS'
-    SPECIAL_KEY_LITERAL_EQUAL = '__EQUAL'
+    # SPECIAL_KEY_LITERAL_EQUAL = '__EQUAL'
 
     SPECIAL_KEYS = [
         SPECIAL_KEY_CHECK_REQ_KEYS,
-        SPECIAL_KEY_LITERAL_EQUAL,
+        # SPECIAL_KEY_LITERAL_EQUAL,
     ]
 
     SPECIAL_VALUE_ANY_CLASS_TYPE = '__ANY_CLASS_TYPE'
@@ -194,48 +214,48 @@ class schemadict(dict):
     # TODO: add 'default' key (can be None, same type as 'type', callable...)
 
     # Define the allowed schema in terms of a schema dict
-    META_SCHEMA = {
-        bool: {
-            SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
-            'type': {SPECIAL_KEY_LITERAL_EQUAL: bool},
-        },
-        int: {
-            SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
-            'type': {SPECIAL_KEY_LITERAL_EQUAL: int},
-            '>': {'type': Number},
-            '<': {'type': Number},
-            '<=': {'type': Number},
-            '>=': {'type': Number},
-        },
-        float: {
-            SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
-            'type': {SPECIAL_KEY_LITERAL_EQUAL: float},
-            '>': {'type': Number},
-            '<': {'type': Number},
-            '<=': {'type': Number},
-            '>=': {'type': Number},
-        },
-        str: {
-            SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
-            'type': {SPECIAL_KEY_LITERAL_EQUAL: str},
-            'min_len': {'type': Number},
-            'max_len': {'type': Number},
-        },
-        list: {
-            SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
-            'type': {SPECIAL_KEY_LITERAL_EQUAL: list},
-            'min_len': {'type': Number},
-            'max_len': {'type': Number},
-            'item_types': {'type': SPECIAL_VALUE_ANY_CLASS_TYPE},
-        },
-        tuple: {
-            SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
-            'type': {SPECIAL_KEY_LITERAL_EQUAL: tuple},
-            'min_len': {'type': Number},
-            'max_len': {'type': Number},
-            'item_types': {'type': SPECIAL_VALUE_ANY_CLASS_TYPE},
-        },
-    }
+    # META_SCHEMA = {
+    #     bool: {
+    #         SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
+    #         'type': {SPECIAL_KEY_LITERAL_EQUAL: bool},
+    #     },
+    #     int: {
+    #         SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
+    #         'type': {SPECIAL_KEY_LITERAL_EQUAL: int},
+    #         '>': {'type': Number},
+    #         '<': {'type': Number},
+    #         '<=': {'type': Number},
+    #         '>=': {'type': Number},
+    #     },
+    #     float: {
+    #         SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
+    #         'type': {SPECIAL_KEY_LITERAL_EQUAL: float},
+    #         '>': {'type': Number},
+    #         '<': {'type': Number},
+    #         '<=': {'type': Number},
+    #         '>=': {'type': Number},
+    #     },
+    #     str: {
+    #         SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
+    #         'type': {SPECIAL_KEY_LITERAL_EQUAL: str},
+    #         'min_len': {'type': Number},
+    #         'max_len': {'type': Number},
+    #     },
+    #     list: {
+    #         SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
+    #         'type': {SPECIAL_KEY_LITERAL_EQUAL: list},
+    #         'min_len': {'type': Number},
+    #         'max_len': {'type': Number},
+    #         'item_types': {'type': SPECIAL_VALUE_ANY_CLASS_TYPE},
+    #     },
+    #     tuple: {
+    #         SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
+    #         'type': {SPECIAL_KEY_LITERAL_EQUAL: tuple},
+    #         'min_len': {'type': Number},
+    #         'max_len': {'type': Number},
+    #         'item_types': {'type': SPECIAL_VALUE_ANY_CLASS_TYPE},
+    #     },
+    # }
     # ===== TODO (END) =====
 
     VALIDATORS = STANDARD_VALIDATORS
@@ -250,10 +270,10 @@ class schemadict(dict):
                 # TODO: Add error message
                 raise ValueError
 
-    def _check_special_values(self, key, value, testdict):
-        if value == self.SPECIAL_VALUE_ANY_CLASS_TYPE:
-            if not isclass(testdict[key]):
-                raise ValueError(f"Value for key {key!r} must be a class")
+    # def _check_special_values(self, key, value, testdict):
+    #     if value == self.SPECIAL_VALUE_ANY_CLASS_TYPE:
+    #         if not isclass(testdict[key]):
+    #             raise ValueError(f"Value for key {key!r} must be a class")
 
     @staticmethod
     def check_req_keys_in_dict(req_keys, testdict):
@@ -306,33 +326,18 @@ class schemadict(dict):
             if sd_key in self.SPECIAL_KEYS:
                 self._check_special_key(sd_key, sd_value, testdict)
                 continue
-            if sd_value in self.SPECIAL_VALUES:
-                self._check_special_values(sd_key, sd_value, testdict)
-                continue
+###            if sd_value in self.SPECIAL_VALUES:
+###                self._check_special_values(sd_key, sd_value, testdict)
+###                continue
             # ===== TODO (END) =====
 
             td_value = testdict.get(sd_key, None)
+            # Continue if testdict does not have corresponding sd_value.
+            # Note that required keys are checked separately.
             if td_value is None:
-                # Continue if testdict does not have corresponding sd_value.
-                # Note that required keys are checked separately.
                 continue
 
-            # Basic type check (every schema entry must define a type)
-            sd_type = sd_value.get('type', None)
-            # ===== TODO =====
-            # TODO: skip type check here!? (see ***)
-            Validators.is_type(td_value, sd_type, sd_key)
-
-            # Recursion
-            if sd_type is dict:
-                sub_schemadict = sd_value.get('schema', None)
-                if sub_schemadict is not None:
-                    schemadict(sub_schemadict).validate(td_value)
-                    continue
-
-            # ===== TODO =====
-            # TODO: (***) type checked twice !?
-            for validator_key, validator in self.VALIDATORS[sd_type].items():
+            for validator_key, validator in self.VALIDATORS[sd_value['type']].items():
                 exp_value = sd_value.get(validator_key, None)
                 if exp_value is not None:
                     validator(td_value, exp_value, sd_key)
