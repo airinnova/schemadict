@@ -54,12 +54,14 @@ Examples
 
     >>> testdict = {'name': 'Neil', 'age': -12}
     >>> schema.validate(testdict)
+    Traceback (most recent call last):
         ...
     ValueError: 'age' too small: expected >= 0, but was -12
     >>>
 
     >>> testdict = {'name': 'Neil', 'age': '55'}
     >>> schema.validate(testdict)
+    Traceback (most recent call last):
         ...
     TypeError: unexpected type for 'age': expected <class 'int'>, but was <class 'str'>
     >>>
@@ -74,7 +76,7 @@ Examples
     ...     },
     ...     'population': {
     ...         'type': int,
-    ...         '>=': 0
+    ...         '>=': 0,
     ...     },
     ... })
     >>>
@@ -83,7 +85,7 @@ Examples
     ...     'cities': {
     ...         'type': list,
     ...         'item_type': dict,
-    ...         'item_schema': schema_city
+    ...         'item_schema': schema_city,
     ...     },
     ... })
     >>>
@@ -92,10 +94,11 @@ Examples
     ...     'cities': [
     ...         {'name': 'Faketown', 'population': 3},
     ...         {'name': 'Evergreen', 'population': True},
-    ...     ]
+    ...     ],
     ... }
     >>>
     >>> schema_country.validate(test_country)
+    Traceback (most recent call last):
         ...
     TypeError: unexpected type for 'population': expected <class 'int'>, but was <class 'bool'>
     >>>
