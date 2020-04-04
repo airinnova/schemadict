@@ -13,7 +13,7 @@ def time_now():
 
 
 SCHEMA_1 = schemadict({
-    '__REQUIRED_KEYS': ['name', 'age'],
+    '$REQUIRED_KEYS': ['name', 'age'],
     'name': {
         'type': str,
         'min_len': 3,
@@ -37,7 +37,7 @@ SCHEMA_1_DEFAULT_VALUE_DICT = schemadict({
 
 # Simple nested schema
 SCHEMA_2 = schemadict({
-    '__REQUIRED_KEYS': ['name', 'age'],
+    '$REQUIRED_KEYS': ['name', 'age'],
     'name': {
         'type': str,
         'min_len': 3,
@@ -68,27 +68,6 @@ SCHEMA_3 = schemadict({
     },
 })
 
-
-SCHEMA_4 = schemadict({
-    'time': {
-        'type': str,
-        'default': time_now
-    },
-    'person': {
-        'type': str,
-        'default': 'C.Lindbergh'
-    },
-    'age': {
-        'type': int
-    },
-    'pets': {
-        'type': dict,
-        'schema': {
-            'dog': {'type': bool, 'default': None},
-            'cat': {'type': bool}
-        },
-    },
-})
 
 SCHEMA_4_DEFAULT_VALUE_DICT = {
     'time': '08:40',
@@ -163,27 +142,6 @@ def test_schema_error():
 
     with pytest.raises(SchemaError):
         schema.validate({'a': MyOwnType()})
-
-
-def test_primitive_bool():
-    """Check type 'bool'"""
-
-    schema = schemadict({
-        '__REQUIRED_KEYS': ['job_done'],
-        'job_done': {'type': bool}
-    })
-
-    schema.validate({'job_done': True})
-    schema.validate({'job_done': True, 'some_other_key': 'value_is_ignored'})
-
-    with pytest.raises(TypeError):
-        schema.validate({'job_done': 100})
-
-    with pytest.raises(KeyError):
-        schema.validate({'required_key_is_missing': True})
-
-    # # TODO: Check if schema itself is correct
-    # schema.update({'key_not_allowed_in_schema': 1})
 
 
 def test_nested_dict():
@@ -266,20 +224,21 @@ def test_list_with_subschemas():
     schema_country.validate(test_country)
 
 
-def test_default_value_dict():
-    """Test 'get_default_value_dict()'"""
+def test_testdict_type():
+    """Raise TypeError if input of validate() is not a dict"""
 
-    defaults = SCHEMA_1.get_default_value_dict()
-    assert defaults == SCHEMA_1_DEFAULT_VALUE_DICT
+    schema = schemadict({'a': {'type': bool}})
 
-    defaults = SCHEMA_4.get_default_value_dict()
-    assert isinstance(defaults['time'], str)
+    schema.validate({'a': True})
 
-    # Time may vary
-    del SCHEMA_4_DEFAULT_VALUE_DICT['time']
-    del defaults['time']
+    with pytest.raises(TypeError):
+        schema.validate(True)
 
-    assert defaults == SCHEMA_4_DEFAULT_VALUE_DICT
+    with pytest.raises(TypeError):
+        schema.validate(144)
+
+    with pytest.raises(TypeError):
+        schema.validate('a: True')
 
 
 def test_version():

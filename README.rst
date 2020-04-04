@@ -114,14 +114,16 @@ Schemadicts supports
 * Built-in support for Python's primitive types
 * Specification of *required* and *optional* keys
 * Validation of *nested* schemas
+
+Features currently in development
+
 * Adding custom validator functions
-
-Features currently in progress
-
 * Metaschema validation
 * Validation of subschemas in list or tuples
 * Regex support for strings
 * Lazy validation and summary of all errors
+* Allow schema variations: schmea 1 OR schema 2
+* Add support for validation of type `number.Number`
 
 Installation
 ============

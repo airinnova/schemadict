@@ -24,8 +24,6 @@ Schema dictionaries
 """
 
 from collections import OrderedDict
-from inspect import isclass
-from numbers import Number
 
 
 class SchemaError(Exception):
@@ -48,10 +46,6 @@ class Validators:
 
     @classmethod
     def is_type(cls, value, exp_type, key):
-        # TODO????
-        # if isinstance(exp_type, dict):
-        #     cls.check_schemadict(value, exp_type, key)
-
         # Note: isinstance(True, int) evaluates to True
         if type(value) not in (exp_type,):
             raise TypeError(
@@ -132,7 +126,7 @@ class ValidatorDict(OrderedDict):
     Raise 'SchemaError' if meta schema for 'type' is not defined.
     """
     def __missing__(self, key):
-        raise SchemaError(f"meta-schema not defined for {key!r}")
+        raise SchemaError(f"validator functions not defined for {key!r}")
 
 
 # Check type (required by all validators)
@@ -175,7 +169,6 @@ STANDARD_VALIDATORS = ValidatorDict({
     list: _VAL_ITERABLE,
     tuple: _VAL_ITERABLE,
     dict: _VAL_SUBSCHEMA,
-    # schemadict: _VAL_SUBSCHEMA,
 })
 
 
@@ -188,92 +181,15 @@ class schemadict(dict):
     otherwise `None` is returned.
     """
 
-    # Special 'type' used for checks
-    class Nothing:
-        pass
+    METAKEY_CHECK_REQ_KEYS = '$REQUIRED_KEYS'
+    METAKEYS = [METAKEY_CHECK_REQ_KEYS]
 
-    # ===== TODO (START) =====
-    # TODO: find better solution!?
-    SPECIAL_KEY_CHECK_REQ_KEYS = '__REQUIRED_KEYS'
-    # SPECIAL_KEY_LITERAL_EQUAL = '__EQUAL'
-
-    SPECIAL_KEYS = [
-        SPECIAL_KEY_CHECK_REQ_KEYS,
-        # SPECIAL_KEY_LITERAL_EQUAL,
-    ]
-
-    SPECIAL_VALUE_ANY_CLASS_TYPE = '__ANY_CLASS_TYPE'
-    SPECIAL_VALUES = [
-        SPECIAL_VALUE_ANY_CLASS_TYPE,
-    ]
-    # ===== TODO (END) =====
-
-    # ===== TODO (START) =====
-    # TODO: add type dict and 'schema' key
-    # TODO: write more succinct
-    # TODO: add 'default' key (can be None, same type as 'type', callable...)
-
-    # Define the allowed schema in terms of a schema dict
-    # META_SCHEMA = {
-    #     bool: {
-    #         SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
-    #         'type': {SPECIAL_KEY_LITERAL_EQUAL: bool},
-    #     },
-    #     int: {
-    #         SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
-    #         'type': {SPECIAL_KEY_LITERAL_EQUAL: int},
-    #         '>': {'type': Number},
-    #         '<': {'type': Number},
-    #         '<=': {'type': Number},
-    #         '>=': {'type': Number},
-    #     },
-    #     float: {
-    #         SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
-    #         'type': {SPECIAL_KEY_LITERAL_EQUAL: float},
-    #         '>': {'type': Number},
-    #         '<': {'type': Number},
-    #         '<=': {'type': Number},
-    #         '>=': {'type': Number},
-    #     },
-    #     str: {
-    #         SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
-    #         'type': {SPECIAL_KEY_LITERAL_EQUAL: str},
-    #         'min_len': {'type': Number},
-    #         'max_len': {'type': Number},
-    #     },
-    #     list: {
-    #         SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
-    #         'type': {SPECIAL_KEY_LITERAL_EQUAL: list},
-    #         'min_len': {'type': Number},
-    #         'max_len': {'type': Number},
-    #         'item_types': {'type': SPECIAL_VALUE_ANY_CLASS_TYPE},
-    #     },
-    #     tuple: {
-    #         SPECIAL_KEY_CHECK_REQ_KEYS: ['type'],
-    #         'type': {SPECIAL_KEY_LITERAL_EQUAL: tuple},
-    #         'min_len': {'type': Number},
-    #         'max_len': {'type': Number},
-    #         'item_types': {'type': SPECIAL_VALUE_ANY_CLASS_TYPE},
-    #     },
-    # }
-    # ===== TODO (END) =====
-
+    # Maps validator functions to special keywords for each type
     VALIDATORS = STANDARD_VALIDATORS
 
     def _check_special_key(self, key, value, testdict):
-        if key == self.SPECIAL_KEY_CHECK_REQ_KEYS:
+        if key == self.METAKEY_CHECK_REQ_KEYS:
             self.check_req_keys_in_dict(value, testdict)
-
-        elif key == self.SPECIAL_KEY_LITERAL_EQUAL:
-            if value != testdict[key]:
-                # ===== TODO =====
-                # TODO: Add error message
-                raise ValueError
-
-    # def _check_special_values(self, key, value, testdict):
-    #     if value == self.SPECIAL_VALUE_ANY_CLASS_TYPE:
-    #         if not isclass(testdict[key]):
-    #             raise ValueError(f"Value for key {key!r} must be a class")
 
     @staticmethod
     def check_req_keys_in_dict(req_keys, testdict):
@@ -294,7 +210,7 @@ class schemadict(dict):
         testdict_keys = list(testdict.keys())
         for req_key in req_keys:
             if req_key not in testdict_keys:
-                raise KeyError(f"Required key {req_key!r} not found in testdict")
+                raise KeyError(f"required key {req_key!r} not found")
 
     def validate(self, testdict):
         """
@@ -312,6 +228,9 @@ class schemadict(dict):
             :ValueError: if test dictionary has a value of wrong 'size'
         """
 
+        # Check that testdict actually is a dictionary
+        Validators.is_type(testdict, dict, '$testdict')
+
         # TODO: validate that the schema itself is valid
 
         self._validate(testdict)
@@ -320,16 +239,11 @@ class schemadict(dict):
         """Validate 'testdict' against 'self' (without schema validation)"""
 
         for sd_key, sd_value in self.items():
-            # ===== TODO (START) =====
             # TODO: find better solution
             # Treat special keys/values separately
-            if sd_key in self.SPECIAL_KEYS:
+            if sd_key in self.METAKEYS:
                 self._check_special_key(sd_key, sd_value, testdict)
                 continue
-###            if sd_value in self.SPECIAL_VALUES:
-###                self._check_special_values(sd_key, sd_value, testdict)
-###                continue
-            # ===== TODO (END) =====
 
             td_value = testdict.get(sd_key, None)
             # Continue if testdict does not have corresponding sd_value.
@@ -337,96 +251,7 @@ class schemadict(dict):
             if td_value is None:
                 continue
 
-            for validator_key, validator in self.VALIDATORS[sd_value['type']].items():
+            for validator_key, validator_func in self.VALIDATORS[sd_value['type']].items():
                 exp_value = sd_value.get(validator_key, None)
                 if exp_value is not None:
-                    validator(td_value, exp_value, sd_key)
-
-    # ===== TODO =====
-    # TODO: continue here --------------------------------------------------
-    def get_default_value_dict(self):
-        """
-        Return a dictionary with default values based on a schema dict
-
-        Default values are generated as follows:
-            * If a key 'default' exists, the corresponding value will be used
-                * If value is callable object, then the called value will be used
-                * If value is non-callable, the value itself will be used
-            * If no key, 'default' exists, 'type' will be called (if callable type)
-            * Otherwise the default value will be None
-
-        Example:
-
-        .. code:: python
-
-            from datetime import datetime
-
-            def time_now():
-                return datetime.strftime(datetime.now(), '%H:%S')
-
-            schemadict = {
-                'time': {
-                    type': str,
-                    'default': time_now
-                },
-                'person': {
-                    'type': str,
-                    'default': 'C.Lindbergh'
-                },
-                'age': {
-                    'type': int
-                },
-                'pets': {
-                    'type': dict,
-                    'schema': {
-                        'dog': {'type': bool, 'default': None},
-                        'cat': {'type': bool}
-                    },
-                },
-            }
-
-        The function will return
-
-        .. code:: python
-
-            defaults = {
-                'time': '08:40',
-                'person': 'C.Lindbergh',
-                'age': 0,
-                'pets': {
-                    'dog': None,
-                    'cat': False,
-                }
-            }
-        """
-
-        defaults = {}
-        for key, value in self.items():
-            if key in self.SPECIAL_KEYS:
-                continue
-
-            # ----- Basic type check -----
-            schemadict_type = value.get('type', None)
-            if schemadict_type is None:
-                raise SchemaError(f"Expected type is not defined in schema (key: {key})")
-
-            # ----- Recursion -----
-            if schemadict_type is dict:
-                defaults[key] = schemadict(value.get('schema', {})).get_default_value_dict()
-                continue
-
-            # ----- Set default value -----
-            # Hint: default value could be intentionally set to None
-            default_value = value.get('default', self.Nothing())
-            if not isinstance(default_value, self.Nothing):
-                if callable(default_value):
-                    defaults[key] = default_value()
-                else:
-                    defaults[key] = default_value
-                # TODO: maybe check that defaults[key] has type schemadict_type
-            elif callable(schemadict_type):
-                defaults[key] = schemadict_type()
-            else:
-                defaults[key] = None
-
-        return defaults
+                    validator_func(td_value, exp_value, sd_key)
