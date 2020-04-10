@@ -105,12 +105,13 @@ Examples
 
 **Custom validation functions**
 
-Each *type* (``int``, ``bool``, ``str``, etc.) defines its own set of validation keywords and corresponding test functions. The ``STANDARD_VALIDATORS`` dictionary contains the default validation functions for Python's built-in types. However, it is also possible to modify or extend this dictionary with custom validation functions.
+Each *type* (``int``, ``bool``, ``str``, etc.) defines its own set of validation keywords and corresponding test functions. The dictionary ``STANDARD_VALIDATORS`` provided by the ``schemadict`` module contains the default validation functions for the Python's built-in types. However, it is also possible to modify or extend this dictionary with custom validation functions.
 
 .. code:: python
 
     >>> from schemadict import schemadict, STANDARD_VALIDATORS
 
+    >>> # Add a custom validation function
     >>> def is_divisible(value, comp_value, key):
     ...     if value % comp_value != 0:
     ...             raise ValueError(f"{key!r} is not divisible by {comp_value}")
@@ -119,10 +120,11 @@ Each *type* (``int``, ``bool``, ``str``, etc.) defines its own set of validation
     ...
     >>>
 
+    >>> # Update the standard validator dictionary
     >>> my_validators = STANDARD_VALIDATORS
     >>> my_validators[int]['%'] = is_divisible
 
-    >>> # Register the updated validator dictionary
+    >>> # Register the updated validator dictionary in the new schemadict instance
     >>> s = schemadict({'my_num': {'type': int, '%': 3}}, validators=my_validators)
 
     >>> s.validate({'my_num': 33})
