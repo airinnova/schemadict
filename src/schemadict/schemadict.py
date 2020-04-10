@@ -176,6 +176,9 @@ STANDARD_VALIDATORS = ValidatorDict({
 })
 
 
+METAKEY_CHECK_REQ_KEYS = '$required_keys'
+
+
 class schemadict(MutableMapping):
     """
     A *schemadict* is a regular Python dictionary which specifies the type and
@@ -185,17 +188,18 @@ class schemadict(MutableMapping):
     otherwise `None` is returned.
     """
 
-    METAKEY_CHECK_REQ_KEYS = '$REQUIRED_KEYS'
-    METAKEYS = [METAKEY_CHECK_REQ_KEYS]
-
-    # Maps validator functions to special keywords for each type
-    VALIDATORS = STANDARD_VALIDATORS
-
     def __init__(self, *args, **kwargs):
         self.mapping = {}
         self.update(*args, **kwargs)
 
+        # Default validator functions (map validator functions to keywords for each type)
+        self.validators = STANDARD_VALIDATORS
+        self.metakeys = [METAKEY_CHECK_REQ_KEYS]
+
     def __setitem__(self, key, value):
+        # Only allow string as keys
+        if not isinstance(key, str):
+            raise SchemaError(f"invalid key {key!r}: must be of type {str}, not {type(key)}")
         self.mapping[key] = value
 
     def __getitem__(self, key):
@@ -216,8 +220,11 @@ class schemadict(MutableMapping):
     def __repr__(self):
         return f"{self.__class__.__qualname__}({self.mapping!r})"
 
+    def register_validator(self, new_validator):
+        raise NotImplementedError
+
     def _check_special_key(self, key, value, testdict):
-        if key == self.METAKEY_CHECK_REQ_KEYS:
+        if key == METAKEY_CHECK_REQ_KEYS:
             self.check_req_keys_in_dict(value, testdict)
 
     @staticmethod
@@ -270,7 +277,7 @@ class schemadict(MutableMapping):
         for sd_key, sd_value in self.items():
             # TODO: find better solution
             # Treat special keys/values separately
-            if sd_key in self.METAKEYS:
+            if sd_key in self.metakeys:
                 self._check_special_key(sd_key, sd_value, testdict)
                 continue
 
@@ -280,7 +287,7 @@ class schemadict(MutableMapping):
             if td_value is None:
                 continue
 
-            for validator_key, validator_func in self.VALIDATORS[sd_value['type']].items():
+            for validator_key, validator_func in self.validators[sd_value['type']].items():
                 exp_value = sd_value.get(validator_key, None)
                 if exp_value is not None:
                     validator_func(td_value, exp_value, sd_key)

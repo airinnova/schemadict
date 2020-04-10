@@ -10,7 +10,7 @@ def test_type_bool():
     """Test type bool"""
 
     schema = schemadict({
-        '$REQUIRED_KEYS': ['job_done'],
+        '$required_keys': ['job_done'],
         'job_done': {'type': bool}
     })
 
@@ -26,7 +26,7 @@ def test_type_bool():
 
 def _check_numerical_ge_le(num_type, ge, le):
     schema = schemadict({
-        '$REQUIRED_KEYS': ['myNumber'],
+        '$required_keys': ['myNumber'],
         'myNumber': {'type': num_type, '>=': ge, '<=': le}
     })
 
@@ -56,7 +56,7 @@ def _check_numerical_ge_le(num_type, ge, le):
 
 def _check_numerical_gt_lt(num_type, gt, lt):
     schema = schemadict({
-        '$REQUIRED_KEYS': ['myNumber'],
+        '$required_keys': ['myNumber'],
         'myNumber': {'type': num_type, '>': gt, '<': lt}
     })
 
@@ -98,30 +98,7 @@ def test_type_str():
     """Test type str"""
 
     schema = schemadict({
-        '$REQUIRED_KEYS': ['firstname', 'lastname'],
-        'firstname': {'type': str, 'min_len': 1, 'max_len': 10},
-        'lastname': {'type': str},
-    })
-
-    schema.validate({'firstname': 'Neil', 'lastname': 'Armstrong'})
-    schema.validate({
-        'firstname': 'Homer',
-        'lastname': 'Simpson-VeryLongLastNameIsOk',
-        'some_other_key': 'value_is_ignored',
-    })
-
-    with pytest.raises(TypeError):
-        schema.validate({'firstname': 'Bart', 'lastname': True})
-
-    with pytest.raises(KeyError):
-        schema.validate({'required_key_is_missing': 'Bart'})
-
-
-def test_type_str():
-    """Test type str"""
-
-    schema = schemadict({
-        '$REQUIRED_KEYS': ['firstname', 'lastname'],
+        '$required_keys': ['firstname', 'lastname'],
         'firstname': {'type': str, 'min_len': 1, 'max_len': 10},
         'lastname': {'type': str},
     })
@@ -142,7 +119,7 @@ def test_type_str():
 
 def _check_iterables(iterable_type):
     schema = schemadict({
-        '$REQUIRED_KEYS': ['fruits', 'numbers'],
+        '$required_keys': ['fruits', 'numbers'],
         'fruits': {'type': iterable_type, 'item_types': str, 'min_len': 1, 'max_len': 3},
         'numbers': {'type': iterable_type, 'item_types': int},
     })
@@ -179,14 +156,14 @@ def test_type_dict():
     """Test type dict"""
 
     pet_schema = schemadict({
-        '$REQUIRED_KEYS': ['animal'],
+        '$required_keys': ['animal'],
         'animal': {'type': str, 'min_len': 0},
         'name': {'type': str, 'min_len': 0},
         'age': {'type': int, '>': 0},
     })
 
     schema = schemadict({
-        '$REQUIRED_KEYS': ['name', 'pet'],
+        '$required_keys': ['name', 'pet'],
         'name': {
             'type': str,
             'min_len': 0,

@@ -14,7 +14,7 @@ def time_now():
 
 
 SCHEMA_1 = schemadict({
-    '$REQUIRED_KEYS': ['name', 'age'],
+    '$required_keys': ['name', 'age'],
     'name': {
         'type': str,
         'min_len': 3,
@@ -38,7 +38,7 @@ SCHEMA_1_DEFAULT_VALUE_DICT = schemadict({
 
 # Simple nested schema
 SCHEMA_2 = schemadict({
-    '$REQUIRED_KEYS': ['name', 'age'],
+    '$required_keys': ['name', 'age'],
     'name': {
         'type': str,
         'min_len': 3,
