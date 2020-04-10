@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from collections.abc import MutableMapping
 from datetime import datetime
 
 import pytest
@@ -78,6 +79,13 @@ SCHEMA_4_DEFAULT_VALUE_DICT = {
         'cat': False,
     }
 }
+
+
+def test_schemadict_type():
+    """Test type of schemadict"""
+
+    assert isinstance(schemadict(), MutableMapping)
+    assert isinstance(schemadict(), schemadict)
 
 
 def test_basic():

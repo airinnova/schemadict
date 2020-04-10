@@ -23,7 +23,11 @@
 Schema dictionaries
 """
 
+# Read:
+# * https://treyhunner.com/2019/04/why-you-shouldnt-inherit-from-list-and-dict-in-python/
+
 from collections import OrderedDict
+from collections.abc import MutableMapping
 
 
 class SchemaError(Exception):
@@ -172,7 +176,7 @@ STANDARD_VALIDATORS = ValidatorDict({
 })
 
 
-class schemadict(dict):
+class schemadict(MutableMapping):
     """
     A *schemadict* is a regular Python dictionary which specifies the type and
     format of values for some given key. To check if a test dictionary is
@@ -186,6 +190,31 @@ class schemadict(dict):
 
     # Maps validator functions to special keywords for each type
     VALIDATORS = STANDARD_VALIDATORS
+
+    def __init__(self, *args, **kwargs):
+        self.mapping = {}
+        self.update(*args, **kwargs)
+
+    def __setitem__(self, key, value):
+        self.mapping[key] = value
+
+    def __getitem__(self, key):
+        return self.mapping[key]
+
+    def __delitem__(self, key):
+        del self.mapping[key]
+
+    def __iter__(self):
+        return iter(self.mapping)
+
+    def __len__(self):
+        return len(self.mapping)
+
+    def __str__(self):
+        return str(self.mapping)
+
+    def __repr__(self):
+        return f"{self.__class__.__qualname__}({self.mapping!r})"
 
     def _check_special_key(self, key, value, testdict):
         if key == self.METAKEY_CHECK_REQ_KEYS:
