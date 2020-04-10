@@ -200,6 +200,9 @@ class schemadict(MutableMapping):
         # Only allow string as keys
         if not isinstance(key, str):
             raise SchemaError(f"invalid key {key!r}: must be of type {str}, not {type(key)}")
+        # ============================================================
+        # TODO: Perform meta schema validation here...
+        # ============================================================
         self.mapping[key] = value
 
     def __getitem__(self, key):
