@@ -188,12 +188,12 @@ class schemadict(MutableMapping):
     otherwise `None` is returned.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, validators=STANDARD_VALIDATORS, **kwargs):
         self.mapping = {}
         self.update(*args, **kwargs)
 
         # Default validator functions (map validator functions to keywords for each type)
-        self.validators = STANDARD_VALIDATORS
+        self.validators = validators
         self.metakeys = [METAKEY_CHECK_REQ_KEYS]
 
     def __setitem__(self, key, value):
@@ -222,9 +222,6 @@ class schemadict(MutableMapping):
 
     def __repr__(self):
         return f"{self.__class__.__qualname__}({self.mapping!r})"
-
-    def register_validator(self, new_validator):
-        raise NotImplementedError
 
     def _check_special_key(self, key, value, testdict):
         if key == METAKEY_CHECK_REQ_KEYS:

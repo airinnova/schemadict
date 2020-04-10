@@ -105,25 +105,90 @@ Examples
 
 **Custom validation functions**
 
-**TODO**
+Each *type* (``int``, ``bool``, ``str``, etc.) defines its own set of validation keywords and corresponding test functions. The ``STANDARD_VALIDATORS`` dictionary contains the default validation functions for Python's built-in types. However, it is also possible to modify or extend this dictionary with custom validation functions.
+
+.. code:: python
+
+    >>> from schemadict import schemadict, STANDARD_VALIDATORS
+
+    >>> def is_divisible(value, comp_value, key):
+    ...     if value % comp_value != 0:
+    ...             raise ValueError(f"{key!r} is not divisible by {comp_value}")
+    ...
+    ...
+    ...
+    >>>
+
+    >>> my_validators = STANDARD_VALIDATORS
+    >>> my_validators[int]['%'] = is_divisible
+
+    >>> # Register the updated validator dictionary
+    >>> s = schemadict({'my_num': {'type': int, '%': 3}}, validators=my_validators)
+
+    >>> s.validate({'my_num': 33})
+    >>> s.validate({'my_num': 4})
+    Traceback (most recent call last):
+        ...
+    ValueError: 'my_num' is not divisible by 3
+    >>>
+
+It is also possible to define *custom types* and *custom test functions* as shown in the following example.
+
+.. code:: python
+
+    >>> from schemadict import schemadict, STANDARD_VALIDATORS
+
+    >>> class MyOcean:
+    ...     has_dolphins = True
+    ...     has_plastic = False
+    ...
+    >>>
+
+    >>> def has_dolphins(value, comp_value, key):
+    ...     if getattr(value, 'has_dolphins') is not comp_value:
+    ...         raise ValueError(f"{key!r} does not have dolphins")
+    ...
+    >>>
+
+    >>> my_validators = STANDARD_VALIDATORS
+    >>> my_validators.update({MyOcean: {'has_dolphins': has_dolphins}})
+    >>>
+
+    >>> schema_ocean = schemadict(
+    ...     {'ocean': {'type': MyOcean, 'has_dolphins': True}},
+    ...     validators=my_validators,
+    ... )
+    >>>
+
+    >>> ocean1 = MyOcean()
+    >>> schema_ocean.validate({'ocean': ocean1})
+    >>>
+
+    >>> ocean2 = MyOcean()
+    >>> ocean2.has_dolphins = False
+    >>> schema_ocean.validate({'ocean': ocean2})
+    Traceback (most recent call last):
+        ...
+    ValueError: 'ocean' does not have dolphins
+
 
 Full documentation: https://schemadict.readthedocs.io/
 
 Features
 ========
 
-Schemadicts supports
+What *schemadict* offers:
 
 * Built-in support for Python's primitive types
-* Specification of *required* and *optional* keys
-* Validation of *nested* schemas
+* Specify *required* and *optional* keys
+* Validate *nested* schemas
+* Add custom validation functions to built-in types
+* Add custom validation functions to custom types
 
 Features currently in development
 
-* Adding custom validator functions
-* Metaschema validation
-* Validation of subschemas in list or tuples
 * Regex support for strings
+* Metaschema validation
 * Lazy validation and summary of all errors
 * Allow schema variations: schmea 1 OR schema 2
 * Add support for validation of type `number.Number`
