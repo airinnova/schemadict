@@ -291,11 +291,6 @@ class schemadict(MutableMapping):
         # Check that testdict actually is a dictionary
         Validators.is_type(testdict, dict, '$testdict', self)
 
-        self._validate(testdict)
-
-    def _validate(self, testdict):
-        """Validate 'testdict' against 'self' (without schema validation)"""
-
         for sd_key, sd_value in self.items():
             # TODO: find better solution
             # Treat special keys/values separately
