@@ -134,11 +134,13 @@ class Validators:
 
     @staticmethod
     def check_item_schema(key, iterable, item_schema, sd_instance):
+        # TODO: check that iterables are not of type dict !?
         for item in iterable:
             sd_instance._check_test_obj_against_test_funcs(key, item_schema, item)
 
     @classmethod
     def check_item_schemadict(cls, key, iterable, item_schema, sd_instance):
+        # TODO: check that iterables are of type dict !?
         for item in iterable:
             cls.check_schemadict(key, item, item_schema, sd_instance)
 
@@ -213,11 +215,11 @@ METAKEY_CHECK_REQ_KEYS = '$required_keys'
 
 class schemadict(MutableMapping):
     """
-    A *schemadict* is a regular Python dictionary which specifies the type and
-    format of values for some given key. To check if a test dictionary is
-    conform with the expected schema, *schemadict* provides the `validate()`
-    method. If the test dictionary is ill-defined, an error will be thrown,
-    otherwise `None` is returned.
+    A *schemadict* is a dictionary that specifies the type and format of values
+    for some given key. To check if a test dictionary is conform with the
+    expected schema, *schemadict* provides the `validate()` method. If the test
+    dictionary is ill-defined, an error will be thrown, otherwise `None` is
+    returned.
     """
 
     def __init__(self, *args, validators=STANDARD_VALIDATORS, **kwargs):
@@ -300,8 +302,9 @@ class schemadict(MutableMapping):
         Validators.is_type('$testdict', testdict, dict, self)
 
         for sd_key, sd_value in self.items():
-            # TODO: find better solution
+
             # Treat special keys/values separately
+            # TODO: find better solution
             if sd_key in self.metakeys:
                 self._check_special_key(sd_key, sd_value, testdict)
                 continue
