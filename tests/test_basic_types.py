@@ -116,6 +116,32 @@ def test_type_str():
     with pytest.raises(KeyError):
         schema.validate({'required_key_is_missing': 'Bart'})
 
+    # Test regex
+    schema = schemadict({
+        'a': {'type': str, 'regex': r'[a-z]*[0-9]'},
+    })
+    schema.validate({'a': 'hello1'})
+    schema.validate({'a': 'monkey8'})
+
+    with pytest.raises(ValueError):
+        schema.validate({'a': 'Monkey8'})  # Uppercase letter not allowed
+
+    with pytest.raises(ValueError):
+        schema.validate({'a': 'test'})
+
+    # More regex tests
+    schema = schemadict({
+        'ip_addrs': {
+            'type': list,
+            'item_schema': {
+                'type': str,
+                'regex': r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$',
+                'min_len': 1,
+            },
+        },
+    })
+
+    # schema.validate({'ip_addrs': ['127.0.0.1', '192.168.1.1']})
 
 def _check_iterables(iterable_type):
     schema = schemadict({

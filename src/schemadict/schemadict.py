@@ -28,6 +28,7 @@ Schema dictionaries
 
 from collections import OrderedDict
 from collections.abc import MutableMapping
+import re
 
 
 class SchemaError(Exception):
@@ -115,12 +116,21 @@ class Validators:
 
     @classmethod
     def check_item_schema(cls, iterable, item_schema, key):
+        # TODO ::: NEEDS TO BE UPDATED >>>> ONLY WORKS FOR DICTS!!!!
         for item in iterable:
             cls.check_schemadict(item, item_schema, key)
 
     @staticmethod
     def check_schemadict(testdict, schema, key):
         schemadict(schema).validate(testdict)
+
+    @staticmethod
+    def check_regex_match(string, pattern, key):
+        if not re.match(pattern, string):
+            raise ValueError(
+                f"regex mismatch for {key!r}: " +
+                f"expected pattern {pattern!r}, got {string!r}"
+            )
 
 
 class ValidatorDict(OrderedDict):
@@ -152,6 +162,12 @@ _VAL_COUNTABLE = {
     'max_len': Validators.has_max_len,
 }
 
+# Check string objects
+_VAL_STRING = {
+    **_VAL_COUNTABLE,
+    'regex': Validators.check_regex_match,
+}
+
 # Check iterable objects (list, tuple)
 _VAL_ITERABLE = {
     **_VAL_COUNTABLE,
@@ -169,7 +185,7 @@ STANDARD_VALIDATORS = ValidatorDict({
     bool: _VAL_TYPE,
     int: _VAL_NUM_REL,
     float: _VAL_NUM_REL,
-    str: _VAL_COUNTABLE,
+    str: _VAL_STRING,
     list: _VAL_ITERABLE,
     tuple: _VAL_ITERABLE,
     dict: _VAL_SUBSCHEMA,
@@ -267,13 +283,6 @@ class schemadict(MutableMapping):
         # Check that testdict actually is a dictionary
         Validators.is_type(testdict, dict, '$testdict')
 
-        # TODO: validate that the schema itself is valid
-
-        self._validate(testdict)
-
-    def _validate(self, testdict):
-        """Validate 'testdict' against 'self' (without schema validation)"""
-
         for sd_key, sd_value in self.items():
             # TODO: find better solution
             # Treat special keys/values separately
@@ -287,7 +296,20 @@ class schemadict(MutableMapping):
             if td_value is None:
                 continue
 
-            for validator_key, validator_func in self.validators[sd_value['type']].items():
-                exp_value = sd_value.get(validator_key, None)
-                if exp_value is not None:
-                    validator_func(td_value, exp_value, sd_key)
+            self._check_test_obj_against_test_funcs(sd_key, sd_value, td_value)
+
+    def _check_test_obj_against_test_funcs(self, sd_key, sd_value, td_value):
+        """
+        For a given key, validate the test dictionary value against each test
+        function defined by the schemadict entry
+
+        Args:
+            :sd_key: common key for test dictionary and schemadict entry
+            :sd_value: mapping of test keywords and validator functions
+            :td_value: test dictionary value (object to test)
+        """
+
+        for validator_key, validator_func in self.validators[sd_value['type']].items():
+            exp_value = sd_value.get(validator_key, None)
+            if exp_value is not None:
+                validator_func(td_value, exp_value, sd_key)
