@@ -85,7 +85,7 @@ Examples
     ...     'cities': {
     ...         'type': list,
     ...         'item_type': dict,
-    ...         'item_schema': schema_city,
+    ...         'item_schemadict': schema_city,
     ...     },
     ... })
     >>>
@@ -112,7 +112,7 @@ Each *type* (``int``, ``bool``, ``str``, etc.) defines its own set of validation
     >>> from schemadict import schemadict, STANDARD_VALIDATORS
 
     >>> # Add a custom validation function
-    >>> def is_divisible(value, comp_value, key):
+    >>> def is_divisible(value, comp_value, key, _):
     ...     if value % comp_value != 0:
     ...             raise ValueError(f"{key!r} is not divisible by {comp_value}")
     ...
@@ -146,7 +146,7 @@ It is also possible to define *custom types* and *custom test functions* as show
     ...
     >>>
 
-    >>> def has_dolphins(value, comp_value, key):
+    >>> def has_dolphins(value, comp_value, key, _):
     ...     if getattr(value, 'has_dolphins') is not comp_value:
     ...         raise ValueError(f"{key!r} does not have dolphins")
     ...

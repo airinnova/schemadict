@@ -141,7 +141,7 @@ def test_type_str():
         },
     })
 
-    # schema.validate({'ip_addrs': ['127.0.0.1', '192.168.1.1']})
+    schema.validate({'ip_addrs': ['127.0.0.1', '192.168.1.1']})
 
 def _check_iterables(iterable_type):
     schema = schemadict({

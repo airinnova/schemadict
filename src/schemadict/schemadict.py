@@ -50,7 +50,7 @@ class Validators:
     """
 
     @classmethod
-    def is_type(cls, value, exp_type, key):
+    def is_type(cls, value, exp_type, key, _):
         # Note: isinstance(True, int) evaluates to True
         if type(value) not in (exp_type,):
             raise TypeError(
@@ -59,7 +59,7 @@ class Validators:
             )
 
     @staticmethod
-    def is_gt(value, comp_value, key):
+    def is_gt(value, comp_value, key, _):
         if not value > comp_value:
             raise ValueError(
                 f"{key!r} too small: " +
@@ -67,7 +67,7 @@ class Validators:
             )
 
     @staticmethod
-    def is_lt(value, comp_value, key):
+    def is_lt(value, comp_value, key, _):
         if not value < comp_value:
             raise ValueError(
                 f"{key!r} too large: " +
@@ -75,7 +75,7 @@ class Validators:
             )
 
     @classmethod
-    def is_ge(cls, value, comp_value, key):
+    def is_ge(cls, value, comp_value, key, _):
         if not value >= comp_value:
             raise ValueError(
                 f"{key!r} too small: " +
@@ -83,7 +83,7 @@ class Validators:
             )
 
     @staticmethod
-    def is_le(value, comp_value, key):
+    def is_le(value, comp_value, key, _):
         if not value <= comp_value:
             raise ValueError(
                 f"{key!r} too large: " +
@@ -91,7 +91,7 @@ class Validators:
             )
 
     @staticmethod
-    def has_min_len(value, min_len, key):
+    def has_min_len(value, min_len, key, _):
         if not len(value) >= min_len:
             raise ValueError(
                 f"length of {key!r} too small: " +
@@ -99,7 +99,7 @@ class Validators:
             )
 
     @staticmethod
-    def has_max_len(value, max_len, key):
+    def has_max_len(value, max_len, key, _):
         if not len(value) <= max_len:
             raise ValueError(
                 f"length of {key!r} too large: " +
@@ -107,7 +107,7 @@ class Validators:
             )
 
     @staticmethod
-    def check_item_types(iterable, exp_item_type, key):
+    def check_item_types(iterable, exp_item_type, key, _):
         if not all(isinstance(item, exp_item_type) for item in iterable):
             raise TypeError(
                 f"unexpected type for item in iterable {key!r}: " +
@@ -115,17 +115,23 @@ class Validators:
             )
 
     @classmethod
-    def check_item_schema(cls, iterable, item_schema, key):
-        # TODO ::: NEEDS TO BE UPDATED >>>> ONLY WORKS FOR DICTS!!!!
+    def check_item_schema(cls, iterable, item_schema, key, sd_instance):
         for item in iterable:
-            cls.check_schemadict(item, item_schema, key)
+            sd_instance._check_test_obj_against_test_funcs(key, item_schema, item)
+
+    @classmethod
+    def check_item_schemadict(cls, iterable, item_schema, key, sd_instance):
+        for item in iterable:
+            cls.check_schemadict(item, item_schema, key, sd_instance)
 
     @staticmethod
-    def check_schemadict(testdict, schema, key):
-        schemadict(schema).validate(testdict)
+    def check_schemadict(testdict, schema, key, sd_instance):
+        # Note: We must propagate the validator functions of the schemadict
+        # instance in case custom test functions have been defined!
+        schemadict(schema, validators=sd_instance.validators).validate(testdict)
 
     @staticmethod
-    def check_regex_match(string, pattern, key):
+    def check_regex_match(string, pattern, key, _):
         if not re.match(pattern, string):
             raise ValueError(
                 f"regex mismatch for {key!r}: " +
@@ -172,7 +178,9 @@ _VAL_STRING = {
 _VAL_ITERABLE = {
     **_VAL_COUNTABLE,
     'item_types': Validators.check_item_types,
-    'item_schema': Validators.check_item_schema,
+    # TODO: find better names !!!!
+    'item_schema': Validators.check_item_schema,  # if each item is primitive type, but not a dictionary
+    'item_schemadict': Validators.check_item_schemadict,  # if each item is a complex dictionary
 }
 
 _VAL_SUBSCHEMA = {
@@ -281,7 +289,12 @@ class schemadict(MutableMapping):
         """
 
         # Check that testdict actually is a dictionary
-        Validators.is_type(testdict, dict, '$testdict')
+        Validators.is_type(testdict, dict, '$testdict', self)
+
+        self._validate(testdict)
+
+    def _validate(self, testdict):
+        """Validate 'testdict' against 'self' (without schema validation)"""
 
         for sd_key, sd_value in self.items():
             # TODO: find better solution
@@ -312,4 +325,4 @@ class schemadict(MutableMapping):
         for validator_key, validator_func in self.validators[sd_value['type']].items():
             exp_value = sd_value.get(validator_key, None)
             if exp_value is not None:
-                validator_func(td_value, exp_value, sd_key)
+                validator_func(td_value, exp_value, sd_key, self)

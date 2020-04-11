@@ -212,7 +212,7 @@ def test_list_with_subschemas():
         'cities': {
             'type': list,
             'item_type': dict,
-            'item_schema': schema_city
+            'item_schemadict': schema_city
         },
     })
 
