@@ -68,6 +68,30 @@ Examples
 
 **Nested schemadict**
 
+It is possible to check individual item in a list. For instance, in the following example we check if each item (of type ``str``) looks like a valid IPv4 address. How each item should look like can be specified with the ``item_schema`` keyword.
+
+.. code:: python
+
+    >>> schema = schemadict({
+    ...     'ip_addrs': {
+    ...         'type': list,
+    ...         'item_schema': {
+    ...             'type': str,
+    ...             'regex': r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$',
+    ...         },
+    ...     },
+    ... })
+    >>>
+    >>>
+    >>> schema.validate({'ip_addrs': ['127.0.0.1', '192.168.1.1']})  # Valid
+    >>> schema.validate({'ip_addrs': ['127.0.0.1', '192.168.1.1', '1234.5678']})  # Last item invalid
+    Traceback (most recent call last):
+        ...
+    ValueError: regex mismatch for 'ip_addrs': expected pattern '^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$', got '1234.5678'
+    >>>
+
+Items in a ``list`` (or ``tuple``) may themselves be dictionaries which can be described with *schemadicts*. In this case, we use the keyword ``item_schemadict`` as illustrated in the following example.
+
 .. code:: python
 
     >>> schema_city = schemadict({
@@ -112,7 +136,7 @@ Each *type* (``int``, ``bool``, ``str``, etc.) defines its own set of validation
     >>> from schemadict import schemadict, STANDARD_VALIDATORS
 
     >>> # Add a custom validation function
-    >>> def is_divisible(value, comp_value, key, _):
+    >>> def is_divisible(key, value, comp_value, _):
     ...     if value % comp_value != 0:
     ...             raise ValueError(f"{key!r} is not divisible by {comp_value}")
     ...
@@ -146,7 +170,7 @@ It is also possible to define *custom types* and *custom test functions* as show
     ...
     >>>
 
-    >>> def has_dolphins(value, comp_value, key, _):
+    >>> def has_dolphins(key, value, comp_value, _):
     ...     if getattr(value, 'has_dolphins') is not comp_value:
     ...         raise ValueError(f"{key!r} does not have dolphins")
     ...
@@ -186,10 +210,10 @@ What *schemadict* offers:
 * Validate *nested* schemas
 * Add custom validation functions to built-in types
 * Add custom validation functions to custom types
+* Support for Regex checks of strings
 
 Features currently in development
 
-* Regex support for strings
 * Metaschema validation
 * Lazy validation and summary of all errors
 * Allow schema variations: schmea 1 OR schema 2

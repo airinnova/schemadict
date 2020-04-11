@@ -9,7 +9,7 @@ from schemadict import schemadict, STANDARD_VALIDATORS
 def test_example_modulo():
     """TODO"""
 
-    def is_divisible(value, comp_value, key, _):
+    def is_divisible(key, value, comp_value, _):
         if value % comp_value != 0:
             raise ValueError(f"{key!r} is not divisible by {comp_value}")
 
@@ -30,7 +30,7 @@ def test_example_my_class():
         has_dolphins = True
         has_plastic = False
 
-    def has_dolphins(value, comp_value, key, _):
+    def has_dolphins(key, value, comp_value, _):
         if getattr(value, 'has_dolphins') is not comp_value:
             raise ValueError(f"{key!r} does not have dolphins")
 

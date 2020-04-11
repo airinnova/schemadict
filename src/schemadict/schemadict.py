@@ -25,6 +25,8 @@ Schema dictionaries
 
 # Read:
 # * https://treyhunner.com/2019/04/why-you-shouldnt-inherit-from-list-and-dict-in-python/
+# * https://docs.python.org/3/library/abc.html
+# * https://docs.python.org/3/library/collections.abc.html
 
 from collections import OrderedDict
 from collections.abc import MutableMapping
@@ -40,17 +42,25 @@ class Validators:
     """
     Collection of validator functions
 
-    All validator functions must accept three arguments in the order listed
+    All validator functions must accept four arguments in the order listed
     below. The actual variable names may differ depending on context.
 
     Args:
-        :value: value to be checked
+        :key: related dictionary key (used in error message)
+        :test_value: value to be checked
         :exp_value: expected value or comparison object
-        :key: dictionary key (used in error message)
+        :sd_instance: instance of the schemadict from which tests are called
+
+    Note:
+        * In most cases the last argument (the schemadict instance) is not
+          needed, and the test function may ignore the argument. However, in
+          case the schemadict is instantiated with custom validator functions,
+          these must be propagated when recursively checking nested data
+          structures
     """
 
-    @classmethod
-    def is_type(cls, value, exp_type, key, _):
+    @staticmethod
+    def is_type(key, value, exp_type, _):
         # Note: isinstance(True, int) evaluates to True
         if type(value) not in (exp_type,):
             raise TypeError(
@@ -59,7 +69,7 @@ class Validators:
             )
 
     @staticmethod
-    def is_gt(value, comp_value, key, _):
+    def is_gt(key, value, comp_value, _):
         if not value > comp_value:
             raise ValueError(
                 f"{key!r} too small: " +
@@ -67,15 +77,15 @@ class Validators:
             )
 
     @staticmethod
-    def is_lt(value, comp_value, key, _):
+    def is_lt(key, value, comp_value, _):
         if not value < comp_value:
             raise ValueError(
                 f"{key!r} too large: " +
                 f"expected < {comp_value!r}, but was {value!r}"
             )
 
-    @classmethod
-    def is_ge(cls, value, comp_value, key, _):
+    @staticmethod
+    def is_ge(key, value, comp_value, _):
         if not value >= comp_value:
             raise ValueError(
                 f"{key!r} too small: " +
@@ -83,7 +93,7 @@ class Validators:
             )
 
     @staticmethod
-    def is_le(value, comp_value, key, _):
+    def is_le(key, value, comp_value, _):
         if not value <= comp_value:
             raise ValueError(
                 f"{key!r} too large: " +
@@ -91,7 +101,7 @@ class Validators:
             )
 
     @staticmethod
-    def has_min_len(value, min_len, key, _):
+    def has_min_len(key, value, min_len, _):
         if not len(value) >= min_len:
             raise ValueError(
                 f"length of {key!r} too small: " +
@@ -99,7 +109,7 @@ class Validators:
             )
 
     @staticmethod
-    def has_max_len(value, max_len, key, _):
+    def has_max_len(key, value, max_len, _):
         if not len(value) <= max_len:
             raise ValueError(
                 f"length of {key!r} too large: " +
@@ -107,36 +117,34 @@ class Validators:
             )
 
     @staticmethod
-    def check_item_types(iterable, exp_item_type, key, _):
+    def check_regex_match(key, string, pattern, _):
+        if not re.match(pattern, string):
+            raise ValueError(
+                f"regex mismatch for {key!r}: " +
+                f"expected pattern {pattern!r}, got {string!r}"
+            )
+
+    @staticmethod
+    def check_item_types(key, iterable, exp_item_type, _):
         if not all(isinstance(item, exp_item_type) for item in iterable):
             raise TypeError(
                 f"unexpected type for item in iterable {key!r}: " +
                 f"expected {exp_item_type!r}"
             )
 
-    @classmethod
-    def check_item_schema(cls, iterable, item_schema, key, sd_instance):
+    @staticmethod
+    def check_item_schema(key, iterable, item_schema, sd_instance):
         for item in iterable:
             sd_instance._check_test_obj_against_test_funcs(key, item_schema, item)
 
     @classmethod
-    def check_item_schemadict(cls, iterable, item_schema, key, sd_instance):
+    def check_item_schemadict(cls, key, iterable, item_schema, sd_instance):
         for item in iterable:
-            cls.check_schemadict(item, item_schema, key, sd_instance)
+            cls.check_schemadict(key, item, item_schema, sd_instance)
 
     @staticmethod
-    def check_schemadict(testdict, schema, key, sd_instance):
-        # Note: We must propagate the validator functions of the schemadict
-        # instance in case custom test functions have been defined!
+    def check_schemadict(key, testdict, schema, sd_instance):
         schemadict(schema, validators=sd_instance.validators).validate(testdict)
-
-    @staticmethod
-    def check_regex_match(string, pattern, key, _):
-        if not re.match(pattern, string):
-            raise ValueError(
-                f"regex mismatch for {key!r}: " +
-                f"expected pattern {pattern!r}, got {string!r}"
-            )
 
 
 class ValidatorDict(OrderedDict):
@@ -289,7 +297,7 @@ class schemadict(MutableMapping):
         """
 
         # Check that testdict actually is a dictionary
-        Validators.is_type(testdict, dict, '$testdict', self)
+        Validators.is_type('$testdict', testdict, dict, self)
 
         for sd_key, sd_value in self.items():
             # TODO: find better solution
@@ -320,4 +328,4 @@ class schemadict(MutableMapping):
         for validator_key, validator_func in self.validators[sd_value['type']].items():
             exp_value = sd_value.get(validator_key, None)
             if exp_value is not None:
-                validator_func(td_value, exp_value, sd_key, self)
+                validator_func(sd_key, td_value, exp_value, self)
