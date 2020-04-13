@@ -23,7 +23,7 @@
 Schema dictionaries
 """
 
-# Read:
+# Relevant:
 # * https://treyhunner.com/2019/04/why-you-shouldnt-inherit-from-list-and-dict-in-python/
 # * https://docs.python.org/3/library/abc.html
 # * https://docs.python.org/3/library/collections.abc.html
@@ -40,7 +40,7 @@ class SchemaError(Exception):
 
 class Validators:
     """
-    Collection of validator functions
+    Collection of validator functions for test dictionary values
 
     All validator functions must accept four arguments in the order listed
     below. The actual variable names may differ depending on context.
@@ -148,22 +148,23 @@ class Validators:
     def check_schemadict(key, testdict, schema, sd_instance):
         schemadict(schema, validators=sd_instance.validators).validate(testdict)
 
-    # ===== Special methods =====
-    # TODO: collect in separate class?
+
+class SpecialValidators:
+    """
+    Collection of special validator functions
+
+    Special validator functions must accept three arguments in the order listed
+    below. The actual variable names may differ depending on context.
+
+    Args:
+        :sd_key: special key from the schemadict
+        :sd_value: special value from the schemadict
+        :sd_instance: instance of the schemadict from which tests are called
+    """
+
     @staticmethod
     def check_req_keys_in_dict(sd_key, req_keys, sd_instance):
-        """
-        Check that required keys are in a test dictionary
-
-        Args:
-            :sd_key: special key from the schemadict
-            :req_keys: List of keys required in the test dictionary
-            :testdict: Test dictionary
-
-        Raises:
-            :KeyError: If a required key is not found in the test dictionary
-        """
-
+        """Check that required keys are in a test dictionary"""
         testdict_keys = list(sd_instance.testdict.keys())
         for req_key in req_keys:
             if req_key not in testdict_keys:
@@ -181,9 +182,7 @@ class ValidatorDict(OrderedDict):
 
 
 # Check type (required by all validators)
-_VAL_TYPE = {
-    'type': Validators.is_type,
-}
+_VAL_TYPE = {'type': Validators.is_type}
 
 # Check numerical relations (int, float, Number)
 _VAL_NUM_REL = {
@@ -223,7 +222,9 @@ _VAL_SUBSCHEMA = {
 
 # Validators for primitive types
 STANDARD_VALIDATORS = ValidatorDict({
-    '$required_keys': Validators.check_req_keys_in_dict,
+    # TODO: move special validators to separate dict!?
+    '$required_keys': SpecialValidators.check_req_keys_in_dict,
+    '$allowed_keys': ...,  # TODO
     bool: _VAL_TYPE,
     int: _VAL_NUM_REL,
     float: _VAL_NUM_REL,
