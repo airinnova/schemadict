@@ -148,6 +148,27 @@ class Validators:
     def check_schemadict(key, testdict, schema, sd_instance):
         schemadict(schema, validators=sd_instance.validators).validate(testdict)
 
+    # ===== Special methods =====
+    # TODO: collect in separate class?
+    @staticmethod
+    def check_req_keys_in_dict(sd_key, req_keys, sd_instance):
+        """
+        Check that required keys are in a test dictionary
+
+        Args:
+            :sd_key: special key from the schemadict
+            :req_keys: List of keys required in the test dictionary
+            :testdict: Test dictionary
+
+        Raises:
+            :KeyError: If a required key is not found in the test dictionary
+        """
+
+        testdict_keys = list(sd_instance.testdict.keys())
+        for req_key in req_keys:
+            if req_key not in testdict_keys:
+                raise KeyError(f"{sd_key!r}: required key {req_key!r} not found")
+
 
 class ValidatorDict(OrderedDict):
     """
@@ -160,7 +181,9 @@ class ValidatorDict(OrderedDict):
 
 
 # Check type (required by all validators)
-_VAL_TYPE = {'type': Validators.is_type}
+_VAL_TYPE = {
+    'type': Validators.is_type,
+}
 
 # Check numerical relations (int, float, Number)
 _VAL_NUM_REL = {
@@ -200,6 +223,7 @@ _VAL_SUBSCHEMA = {
 
 # Validators for primitive types
 STANDARD_VALIDATORS = ValidatorDict({
+    '$required_keys': Validators.check_req_keys_in_dict,
     bool: _VAL_TYPE,
     int: _VAL_NUM_REL,
     float: _VAL_NUM_REL,
@@ -208,9 +232,6 @@ STANDARD_VALIDATORS = ValidatorDict({
     tuple: _VAL_ITERABLE,
     dict: _VAL_SUBSCHEMA,
 })
-
-
-METAKEY_CHECK_REQ_KEYS = '$required_keys'
 
 
 class schemadict(MutableMapping):
@@ -228,7 +249,7 @@ class schemadict(MutableMapping):
 
         # Default validator functions (map validator functions to keywords for each type)
         self.validators = validators
-        self.metakeys = [METAKEY_CHECK_REQ_KEYS]
+        self.testdict = None
 
     def __setitem__(self, key, value):
         # Only allow string as keys
@@ -257,31 +278,6 @@ class schemadict(MutableMapping):
     def __repr__(self):
         return f"{self.__class__.__qualname__}({self.mapping!r})"
 
-    def _check_special_key(self, key, value, testdict):
-        if key == METAKEY_CHECK_REQ_KEYS:
-            self.check_req_keys_in_dict(value, testdict)
-
-    @staticmethod
-    def check_req_keys_in_dict(req_keys, testdict):
-        """
-        Check that required keys are in a test dictionary
-
-        Args:
-            :req_keys: List of keys required in the test dictionary
-            :testdict: Test dictionary
-
-        Raises:
-            :KeyError: If a required key is not found in the test dictionary
-        """
-
-        # ===== TODO =====
-        # TODO: check that req_keys is list of strings !?
-
-        testdict_keys = list(testdict.keys())
-        for req_key in req_keys:
-            if req_key not in testdict_keys:
-                raise KeyError(f"required key {req_key!r} not found")
-
     def validate(self, testdict):
         """
         Check that a dictionary conforms to a schema dictionary. This function
@@ -301,21 +297,34 @@ class schemadict(MutableMapping):
         # Check that testdict actually is a dictionary
         Validators.is_type('$testdict', testdict, dict, self)
 
-        for sd_key, sd_value in self.items():
+        # Keep a reference to the test dictionary
+        self.testdict = testdict
 
-            # Treat special keys/values separately
-            # TODO: find better solution
-            if sd_key in self.metakeys:
-                self._check_special_key(sd_key, sd_value, testdict)
+        for sd_key, sd_value in self.items():
+            # A special key starting with '$' does not define a corresponding
+            # entry in the test dictionary. Intercept, run check and continue.
+            if sd_key.startswith('$'):
+                self._check_special_keys(sd_key, sd_value)
                 continue
 
+            # If 'testdict' does not have corresponding sd_value, continue.
+            # Note: required keys are checked separately with special keys.
             td_value = testdict.get(sd_key, None)
-            # Continue if testdict does not have corresponding sd_value.
-            # Note that required keys are checked separately.
             if td_value is None:
                 continue
 
             self._check_test_obj_against_test_funcs(sd_key, sd_value, td_value)
+
+    def _check_special_keys(self, sd_key, sd_value):
+        """
+        Run the test function for a special key (starting with '$')
+
+        Args:
+            :sd_key: special key from the schemadict
+            :sd_value: special value from the schemadict
+        """
+
+        self.validators[sd_key](sd_key, sd_value, self)
 
     def _check_test_obj_against_test_funcs(self, sd_key, sd_value, td_value):
         """
