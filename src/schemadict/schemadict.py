@@ -30,6 +30,7 @@ Schema dictionaries
 
 from collections import OrderedDict
 from collections.abc import MutableMapping
+from numbers import Number
 import re
 
 
@@ -61,8 +62,11 @@ class Validators:
 
     @staticmethod
     def is_type(key, value, exp_type, _):
-        # Note: isinstance(True, int) evaluates to True
-        if type(value) not in (exp_type,):
+        if (
+            (not isinstance(value, exp_type)) or
+            # Note: isinstance(True, int) evaluates to True
+            (value is True and type(value) not in (exp_type,))
+        ):
             raise TypeError(
                 f"unexpected type for {key!r}: " +
                 f"expected {exp_type!r}, but was {type(value)}"
@@ -225,13 +229,14 @@ STANDARD_VALIDATORS = ValidatorDict({
     # TODO: move special validators to separate dict!?
     '$required_keys': SpecialValidators.check_req_keys_in_dict,
     '$allowed_keys': ...,  # TODO
+    Number: _VAL_NUM_REL,
     bool: _VAL_TYPE,
-    int: _VAL_NUM_REL,
-    float: _VAL_NUM_REL,
-    str: _VAL_STRING,
-    list: _VAL_ITERABLE,
-    tuple: _VAL_ITERABLE,
     dict: _VAL_SUBSCHEMA,
+    float: _VAL_NUM_REL,
+    int: _VAL_NUM_REL,
+    list: _VAL_ITERABLE,
+    str: _VAL_STRING,
+    tuple: _VAL_ITERABLE,
 })
 
 

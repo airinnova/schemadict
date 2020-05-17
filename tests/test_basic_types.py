@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from numbers import Number
+
 from schemadict import schemadict
 
 import pytest
@@ -92,6 +94,12 @@ def test_type_float():
     """Test type float"""
     _check_numerical_ge_le(float, -3.3343, 55.34)
     _check_numerical_gt_lt(float, -3.3343, 55.34)
+
+
+def test_type_Number():
+    """Test type float"""
+    _check_numerical_ge_le(Number, -3, 55.34)
+    _check_numerical_gt_lt(Number, -3, 55.34)
 
 
 def test_type_str():
