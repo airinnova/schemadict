@@ -77,6 +77,8 @@ rst_prolog = f"""
 .. |name_bold| replace:: **{NAME}**
 .. |author1| replace:: {AUTHOR_LIST[0]}
 .. |license| replace:: {LICENCE_NAME}
+.. _pip: https://pypi.org/project/pip/
+.. |pypi_long| replace:: Python Package Index
 """
 
 # -- Options for HTML output -------------------------------------------------
