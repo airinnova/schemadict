@@ -84,22 +84,36 @@ def _check_numerical_gt_lt(num_type, gt, lt):
         schema.validate({'required_key_is_missing': True})
 
 
+def _check_numerical_one_of(num_type, one_of, num_in_set, num_not_in_set):
+    schema = schemadict({
+        'myNumber': {'type': num_type, 'one_of': one_of}
+    })
+
+    schema.validate({'myNumber': num_in_set})
+
+    with pytest.raises(ValueError):
+        schema.validate({'myNumber': num_not_in_set})
+
+
 def test_type_int():
     """Test type int"""
     _check_numerical_ge_le(int, -100, 100)
     _check_numerical_gt_lt(int, -100, 100)
+    _check_numerical_one_of(int, [2, 3, 5], 5, 700)
 
 
 def test_type_float():
     """Test type float"""
     _check_numerical_ge_le(float, -3.3343, 55.34)
     _check_numerical_gt_lt(float, -3.3343, 55.34)
+    _check_numerical_one_of(float, [2.2, 3.3, 5.5], 5.5, 700.7)
 
 
 def test_type_Number():
     """Test type float"""
     _check_numerical_ge_le(Number, -3, 55.34)
     _check_numerical_gt_lt(Number, -3, 55.34)
+    _check_numerical_one_of(Number, [2.2, 3, 5], 5, 700.7)
 
 
 def test_type_str():
@@ -150,6 +164,17 @@ def test_type_str():
     })
 
     schema.validate({'ip_addrs': ['127.0.0.1', '192.168.1.1']})
+
+    # Test 'one_of'
+    schema = schemadict({
+        'fruit': {'type': str, 'one_of': ['banana', 'strawberry', 'apple']},
+    })
+
+    schema.validate({'fruit': 'banana'})
+
+    with pytest.raises(ValueError):
+        schema.validate({'fruit': 'raspberry'})
+
 
 def _check_iterables(iterable_type):
     schema = schemadict({

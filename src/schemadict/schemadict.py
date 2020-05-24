@@ -73,6 +73,14 @@ class Validators:
             )
 
     @staticmethod
+    def one_of(key, value, allowed_values, _):
+        if value not in set(allowed_values):
+            raise ValueError(
+                f"{key!r} value not allowed: " +
+                f"must be one of {set(allowed_values)!r}, but was {value!r}"
+            )
+
+    @staticmethod
     def is_gt(key, value, comp_value, _):
         if not value > comp_value:
             raise ValueError(
@@ -188,9 +196,13 @@ class ValidatorDict(OrderedDict):
 # Check type (required by all validators)
 _VAL_TYPE = {'type': Validators.is_type}
 
+# Check if instance is one of a set
+_VAL_ONE_OF = {'one_of': Validators.one_of}
+
 # Check numerical relations (int, float, Number)
 _VAL_NUM_REL = {
     **_VAL_TYPE,
+    **_VAL_ONE_OF,
     '>': Validators.is_gt,
     '<': Validators.is_lt,
     '>=': Validators.is_ge,
@@ -207,6 +219,7 @@ _VAL_COUNTABLE = {
 # Check string objects
 _VAL_STRING = {
     **_VAL_COUNTABLE,
+    **_VAL_ONE_OF,
     'regex': Validators.check_regex_match,
 }
 
