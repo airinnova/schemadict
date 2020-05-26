@@ -81,6 +81,14 @@ class Validators:
             )
 
     @staticmethod
+    def allowed_items(key, values, allowed_items, _):
+        if any(value not in set(allowed_items) for value in values):
+            raise ValueError(
+                f"{key!r} value not allowed: " +
+                f"must be from set {set(allowed_items)!r}, but was {set(values)!r}"
+            )
+
+    @staticmethod
     def is_gt(key, value, comp_value, _):
         if not value > comp_value:
             raise ValueError(
@@ -242,6 +250,7 @@ _VAL_ITERABLE = {
     # TODO: find better names !!!!
     'item_schema': Validators.check_item_schema,  # if each item is primitive type, but not a dictionary
     'item_schemadict': Validators.check_item_schemadict,  # if each item is a complex dictionary
+    'allowed_items': Validators.allowed_items,
 }
 
 _VAL_SUBSCHEMA = {

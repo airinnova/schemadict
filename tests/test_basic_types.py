@@ -181,11 +181,13 @@ def _check_iterables(iterable_type):
         '$required_keys': ['fruits', 'numbers'],
         'fruits': {'type': iterable_type, 'item_types': str, 'min_len': 1, 'max_len': 3},
         'numbers': {'type': iterable_type, 'item_types': int},
+        'names': {'type': iterable_type, 'allowed_items': ('Neil', 'Linda', 'Bob', 'Anna')},
     })
 
     testdict = {
         'fruits': iterable_type(['papaya', 'avocado', 'melon']),
         'numbers': iterable_type([1, 55, 56, 913]),
+        'names': iterable_type(['Neil', 'Bob']),
     }
     schema.validate(testdict)
 
@@ -198,6 +200,15 @@ def _check_iterables(iterable_type):
 
     del testdict['fruits']
     with pytest.raises(KeyError):
+        schema.validate(testdict)
+
+
+    with pytest.raises(ValueError):
+        testdict = {
+            'fruits': iterable_type(['papaya', 'avocado', 'melon']),
+            'numbers': iterable_type([1, 55, 56, 913]),
+            'names': iterable_type(['Bob', 'Sandra']),
+        }
         schema.validate(testdict)
 
 
