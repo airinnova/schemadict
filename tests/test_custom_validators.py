@@ -49,3 +49,19 @@ def test_example_my_class():
     ocean2.has_dolphins = False
     with pytest.raises(ValueError):
         schema_ocean.validate({'ocean': ocean2})
+
+
+def test_register_type():
+    """TODO"""
+
+    class MyVerySpecialClass:
+        pass
+
+    my_validators = STANDARD_VALIDATORS
+    my_validators.register_type(MyVerySpecialClass)
+
+    s = schemadict({'something': {'type': MyVerySpecialClass}}, validators=my_validators)
+
+    s.validate({'something': MyVerySpecialClass()})
+    with pytest.raises(TypeError):
+        s.validate({'something': 3})

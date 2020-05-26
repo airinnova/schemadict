@@ -161,6 +161,10 @@ class Validators:
         schemadict(schema, validators=sd_instance.validators).validate(testdict)
 
 
+# Check type (required by all validators)
+Validators.FOR_TYPE = {'type': Validators.is_type}
+
+
 class SpecialValidators:
     """
     Collection of special validator functions
@@ -192,16 +196,24 @@ class ValidatorDict(OrderedDict):
     def __missing__(self, key):
         raise SchemaError(f"validator functions not defined for {key!r}")
 
+    def register_type(self, new_type, add_val={}):
+        """
+        Register a new type
 
-# Check type (required by all validators)
-_VAL_TYPE = {'type': Validators.is_type}
+        Args:
+            :new_type: any type/class
+            :add_val: additional validators
+        """
+        assert isinstance(add_val, dict)
+        self.update({new_type: {**Validators.FOR_TYPE, **add_val}})
+
 
 # Check if instance is one of a set
 _VAL_ONE_OF = {'one_of': Validators.one_of}
 
 # Check numerical relations (int, float, Number)
 _VAL_NUM_REL = {
-    **_VAL_TYPE,
+    **Validators.FOR_TYPE,
     **_VAL_ONE_OF,
     '>': Validators.is_gt,
     '<': Validators.is_lt,
@@ -211,7 +223,7 @@ _VAL_NUM_REL = {
 
 # Check countable objects (list, tuple, str)
 _VAL_COUNTABLE = {
-    **_VAL_TYPE,
+    **Validators.FOR_TYPE,
     'min_len': Validators.has_min_len,
     'max_len': Validators.has_max_len,
 }
@@ -233,7 +245,7 @@ _VAL_ITERABLE = {
 }
 
 _VAL_SUBSCHEMA = {
-    **_VAL_TYPE,
+    **Validators.FOR_TYPE,
     'schema': Validators.check_schemadict,
 }
 
@@ -243,7 +255,7 @@ STANDARD_VALIDATORS = ValidatorDict({
     '$required_keys': SpecialValidators.check_req_keys_in_dict,
     '$allowed_keys': ...,  # TODO
     Number: _VAL_NUM_REL,
-    bool: _VAL_TYPE,
+    bool: Validators.FOR_TYPE,
     dict: _VAL_SUBSCHEMA,
     float: _VAL_NUM_REL,
     int: _VAL_NUM_REL,
